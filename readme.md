@@ -1,6 +1,6 @@
 # Monte Carlo IP Searcher（mcis）
 
-一个 **Cloudflare IP 优选**工具：用**递进式蒙特卡罗 + 多头分散搜索（multi-head + beam）**在更少探测次数下，从 IPv4/IPv6 网段里找到更快/更稳定的 IP。
+一个 **Cloudflare IP 优选**工具：用**递进式蒙特卡罗 + 多头分散搜索（multi-head + beam）**，在更少探测次数下，从 IPv4/IPv6 网段里找到更快/更稳定的 IP。
 
 示例优选域名：`hao.haohaohao.xyz`
 
