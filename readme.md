@@ -182,4 +182,6 @@ go build -o mcis.exe .\cmd\mcis
 
 ## License
 
-待补充。
+本项目使用 **GNU General Public License v3.0（GPL-3.0）** 开源发布。
+
+详见仓库根目录的 [`LICENSE`](./LICENSE) 文件。
