@@ -1,6 +1,8 @@
 # Monte Carlo IP Searcher（mcis）
 
-一个 **Cloudflare IP 优选**工具：用**递进式蒙特卡罗 + 多头分散搜索（multi-head + beam）**，在更少探测次数下，从 IPv4/IPv6 网段里找到更快/更稳定的 IP。
+一个 **Cloudflare IP 优选**工具：用**层次化 Thompson Sampling + 多头分散搜索**，在更少探测次数下，从 IPv4/IPv6 网段里找到更快/更稳定的 IP。
+
+v2.0 采用贝叶斯优化算法，自动平衡"探索"与"利用"，无需手动调参。
 
 示例优选域名：`hao.haohaohao.xyz`
 
@@ -30,8 +32,10 @@ go run ./cmd/mcis --budget 2000 --concurrency 100 --heads 10 --beam 32 -v --out 
 
 ## 特色
 
-- **递进式搜索**：不是全段扫描，而是对表现更好的子网逐步“下钻拆分”，把预算集中到更有潜力的区域。
-- **多头分散探索**：同时并行探索多个次优子网，降低“先入为主”陷入局部最优的概率。
+- **Thompson Sampling**：贝叶斯优化算法，自动平衡探索与利用，无需手动调参（相比 UCB 算法）。
+- **递进式下钻**：不是全段扫描，而是对表现更好的子网逐步"下钻拆分"，把预算集中到更有潜力的区域。
+- **多头分散探索**：多个搜索头并行探索不同区域，通过"排斥力"机制避免收敛到同一局部最优。
+- **层次化统计**：每个前缀维护独立的贝叶斯后验分布，支持快速识别优质子网。
 - **IPv4 / IPv6 同时支持**：CIDR 解析、拆分、采样、探测全流程支持 v4/v6 混合输入。
 - **强制直连探测**：即使系统/环境变量配置了代理，本工具也会**忽略 `HTTP_PROXY/HTTPS_PROXY/NO_PROXY`**，确保测速不被代理污染。
 - **探测方式**：默认对 `https://example.com/cdn-cgi/trace` 发起请求，域名可用 `--host` 覆盖，也可分别用 `--sni` / `--host-header` 覆盖 tls sni 和 http Host header ；路径可使用 `--path` 覆盖。
@@ -67,7 +71,9 @@ go run ./cmd/mcis --budget 2000 --concurrency 100 --heads 10 --beam 32 -v --out 
 - `--timeout`：单次探测超时（如 `2s` / `3s`）
 - `--heads`：多头数量（分散探索）
 - `--beam`：每个 head 保留的候选前缀数量（越大越“发散”）
-- `--min-samples-split`：前缀至少采样多少次才允许下钻拆分
+- `--min-samples-split`：前缀至少采样多少次才允许下钻拆分（默认 5）
+- `--split-interval`：每多少个样本检查一次拆分机会（默认 20）
+- `--diversity-weight`：多头多样性权重（0-1，越高越分散探索，默认 0.3）
 - `--split-step-v4`：IPv4 下钻时前缀长度增加步长（例如 `/16 -> /18` 用 `2`）
 - `--split-step-v6`：IPv6 下钻时前缀长度增加步长（例如 `/32 -> /36` 用 `4`）
 - `--max-bits-v4` / `--max-bits-v6`：限制下钻到的最细前缀
