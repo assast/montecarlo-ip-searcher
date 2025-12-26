@@ -14,9 +14,10 @@ const cloudflareAPIBase = "https://api.cloudflare.com/client/v4"
 
 // CloudflareProvider implements Provider for Cloudflare DNS.
 type CloudflareProvider struct {
-	token  string
-	zoneID string
-	client *http.Client
+	token    string
+	zoneID   string
+	zoneName string // cached zone name (e.g., "example.com")
+	client   *http.Client
 }
 
 // NewCloudflareProvider creates a new Cloudflare DNS provider.
@@ -67,6 +68,69 @@ type cfError struct {
 	Message string `json:"message"`
 }
 
+// cfZoneResponse represents the Cloudflare API zone response.
+type cfZoneResponse struct {
+	Success bool      `json:"success"`
+	Errors  []cfError `json:"errors"`
+	Result  struct {
+		Name string `json:"name"`
+	} `json:"result"`
+}
+
+// getZoneName fetches and caches the zone name (domain).
+func (p *CloudflareProvider) getZoneName(ctx context.Context) (string, error) {
+	if p.zoneName != "" {
+		return p.zoneName, nil
+	}
+
+	url := fmt.Sprintf("%s/zones/%s", cloudflareAPIBase, p.zoneID)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Authorization", "Bearer "+p.token)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	var result cfZoneResponse
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", fmt.Errorf("parse response: %w", err)
+	}
+
+	if !result.Success {
+		if len(result.Errors) > 0 {
+			return "", fmt.Errorf("cloudflare API error: %s", result.Errors[0].Message)
+		}
+		return "", fmt.Errorf("cloudflare API error: unknown")
+	}
+
+	p.zoneName = result.Result.Name
+	return p.zoneName, nil
+}
+
+// buildFQDN builds the full domain name from subdomain.
+func (p *CloudflareProvider) buildFQDN(ctx context.Context, subdomain string) (string, error) {
+	zoneName, err := p.getZoneName(ctx)
+	if err != nil {
+		return "", fmt.Errorf("get zone name: %w", err)
+	}
+	if subdomain == "" || subdomain == "@" {
+		return zoneName, nil
+	}
+	return subdomain + "." + zoneName, nil
+}
+
 // DeleteRecords deletes all A or AAAA records for the subdomain.
 func (p *CloudflareProvider) DeleteRecords(ctx context.Context, subdomain string, ipv6 bool) error {
 	recordType := "A"
@@ -74,8 +138,14 @@ func (p *CloudflareProvider) DeleteRecords(ctx context.Context, subdomain string
 		recordType = "AAAA"
 	}
 
+	// Build full domain name
+	fqdn, err := p.buildFQDN(ctx, subdomain)
+	if err != nil {
+		return err
+	}
+
 	// List existing records
-	records, err := p.listRecords(ctx, subdomain, recordType)
+	records, err := p.listRecords(ctx, fqdn, recordType)
 	if err != nil {
 		return err
 	}
@@ -91,12 +161,18 @@ func (p *CloudflareProvider) DeleteRecords(ctx context.Context, subdomain string
 
 // CreateRecords creates A/AAAA records for the given IPs.
 func (p *CloudflareProvider) CreateRecords(ctx context.Context, subdomain string, ips []netip.Addr) error {
+	// Build full domain name
+	fqdn, err := p.buildFQDN(ctx, subdomain)
+	if err != nil {
+		return err
+	}
+
 	for _, ip := range ips {
 		recordType := "A"
 		if ip.Is6() {
 			recordType = "AAAA"
 		}
-		if err := p.createRecord(ctx, subdomain, recordType, ip.String()); err != nil {
+		if err := p.createRecord(ctx, fqdn, recordType, ip.String()); err != nil {
 			return fmt.Errorf("create record for %s: %w", ip.String(), err)
 		}
 	}
