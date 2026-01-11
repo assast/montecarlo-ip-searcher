@@ -24,7 +24,7 @@ docker-compose build
 ### 2️⃣ 创建输出目录
 
 ```bash
-mkdir -p output
+mkdir -p output && chmod 777 output && ls -la | grep output
 ```
 
 ### 3️⃣ 运行优选
