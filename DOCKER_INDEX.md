@@ -21,7 +21,11 @@
 - **自定义配置** → [examples/README.md](examples/README.md)
 - **CI/CD 集成** → [.github/workflows/docker-example.yml.disabled](.github/workflows/docker-example.yml.disabled)
 
-### 了解项目
+### 解决问题
+- **解决问题** → [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - 详细的故障排查指南
+- **常见问题** → [DOCKER_USAGE.md#常见问题](DOCKER_USAGE.md#常见问题)
+- **Docker 镜像问题** → [TROUBLESHOOTING.md#问题-2-docker-镜像拉取失败](TROUBLESHOOTING.md#问题-2-docker-镜像拉取失败)
+- **网络连接问题** → [TROUBLESHOOTING.md#问题-5-网络连接失败](TROUBLESHOOTING.md#问题-5-网络连接失败)
 - **查看所有文件** → [DOCKER_FILES.md](DOCKER_FILES.md)
 - **项目总结** → [DOCKER_SUMMARY.md](DOCKER_SUMMARY.md)
 - **主项目文档** → [readme.md](readme.md)
@@ -157,7 +161,8 @@ docker-compose -f examples/custom-config.yml up <service-name>
 → [.github/workflows/docker-example.yml.disabled](.github/workflows/docker-example.yml.disabled)
 
 ### 场景：我遇到了问题
-→ [DOCKER_USAGE.md#常见问题](DOCKER_USAGE.md#常见问题)
+→ [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - 详细的故障排查指南  
+→ [DOCKER_USAGE.md#常见问题](DOCKER_USAGE.md#常见问题) - 快速问答
 
 ## 📋 文件清单
 
