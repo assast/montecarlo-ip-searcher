@@ -1,9 +1,8 @@
-# 构建阶段
-# 注意：如果 golang:1.25-alpine 镜像不可用，可以使用 golang:1.23-alpine
-FROM golang:alpine AS builder
+# 备用 Dockerfile（使用 Debian 基础镜像，适合网络不稳定时使用）
+# 使用方法: docker-compose build --build-arg DOCKERFILE=Dockerfile.debian
 
-# 安装必要的构建工具
-RUN apk add --no-cache git ca-certificates
+# 构建阶段
+FROM golang:latest AS builder
 
 # 设置工作目录
 WORKDIR /build
@@ -18,13 +17,15 @@ RUN go mod download
 COPY . .
 
 # 构建应用
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags="-w -s" -o mcis ./cmd/mcis
+RUN CGO_ENABLED=0 go build -a -ldflags="-w -s" -o mcis ./cmd/mcis
 
 # 运行阶段
-FROM alpine:latest
+FROM debian:stable-slim
 
 # 安装 ca-certificates 以支持 HTTPS
-RUN apk --no-cache add ca-certificates tzdata
+RUN apt-get update && \
+    apt-get install -y ca-certificates tzdata && \
+    rm -rf /var/lib/apt/lists/*
 
 # 设置时区（可选）
 ENV TZ=Asia/Shanghai
@@ -41,8 +42,8 @@ COPY ipv4cidr.txt ipv6cidr.txt ./
 RUN mkdir -p /app/output
 
 # 设置为非 root 用户运行（可选，增强安全性）
-RUN addgroup -g 1000 mcis && \
-    adduser -D -u 1000 -G mcis mcis && \
+RUN groupadd -g 1000 mcis && \
+    useradd -u 1000 -g mcis -s /bin/bash -m mcis && \
     chown -R mcis:mcis /app
 
 USER mcis

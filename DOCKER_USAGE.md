@@ -301,27 +301,59 @@ A: mcis 需要直连目标 IP 进行测速，使用 host 网络模式可以：
 - 确保测速结果准确
 - 支持 IPv6（Docker 默认网络不支持 IPv6）
 
-### Q2: 如何查看运行日志？
+### Q2: Docker 镜像拉取失败怎么办？
 
+**错误信息：** `failed to resolve source metadata for docker.io/library/golang`
+
+**解决方案：**
+
+1. **使用备用 Dockerfile（Debian 基础镜像）：**
 ```bash
-# 实时查看日志
-docker-compose logs -f mcis-ipv4
-
-# 查看最近 100 行日志
-docker-compose logs --tail=100 mcis-ipv4
+# 修改 docker-compose.yml 中的 build 部分
+build:
+  context: .
+  dockerfile: Dockerfile.debian
 ```
 
-### Q3: 如何停止正在运行的服务？
+2. **配置 Docker 镜像加速器（中国大陆用户）：**
 
+编辑 `/etc/docker/daemon.json`（Linux）或 Docker Desktop 设置（macOS/Windows）：
+```json
+{
+  "registry-mirrors": [
+    "https://docker.mirrors.ustc.edu.cn",
+    "https://hub-mirror.c.163.com",
+    "https://mirror.ccs.tencentyun.com"
+  ]
+}
+```
+
+重启 Docker：
 ```bash
-# 停止特定服务
-docker-compose stop mcis-ipv4
+# Linux
+sudo systemctl restart docker
 
-# 停止所有服务
-docker-compose down
+# macOS/Windows
+# 重启 Docker Desktop
+```
 
-# 停止并删除容器
-docker-compose down --remove-orphans
+3. **使用代理：**
+```bash
+# 临时使用代理
+export HTTP_PROXY=http://your-proxy:port
+export HTTPS_PROXY=http://your-proxy:port
+docker-compose build
+```
+
+4. **手动指定镜像版本：**
+
+修改 Dockerfile 第一行：
+```dockerfile
+# 使用特定版本
+FROM golang:1.23-alpine AS builder
+
+# 或使用最新版本
+FROM golang:alpine AS builder
 ```
 
 ### Q4: 容器内无法访问网络怎么办？
