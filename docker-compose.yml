@@ -1,0 +1,134 @@
+version: '3.8'
+
+services:
+  # IPv4 优选服务
+  mcis-ipv4:
+    build: .
+    container_name: mcis-ipv4
+    command: >
+      -v
+      --out text
+      --cidr-file /app/ipv4cidr.txt
+      --budget 2000
+      --top 20
+      --concurrency 200
+      --timeout 3s
+      --host example.com
+      --out-file /app/output/ipv4-results.txt
+    volumes:
+      - ./output:/app/output
+      - ./ipv4cidr.txt:/app/ipv4cidr.txt:ro
+    restart: "no"
+    network_mode: host
+
+  # IPv6 优选服务
+  mcis-ipv6:
+    build: .
+    container_name: mcis-ipv6
+    command: >
+      -v
+      --out text
+      --cidr-file /app/ipv6cidr.txt
+      --budget 2000
+      --top 20
+      --concurrency 200
+      --timeout 3s
+      --host example.com
+      --out-file /app/output/ipv6-results.txt
+    volumes:
+      - ./output:/app/output
+      - ./ipv6cidr.txt:/app/ipv6cidr.txt:ro
+    restart: "no"
+    network_mode: host
+
+  # 带下载测速的 IPv4 优选
+  mcis-ipv4-download:
+    build: .
+    container_name: mcis-ipv4-download
+    command: >
+      -v
+      --out text
+      --cidr-file /app/ipv4cidr.txt
+      --budget 2000
+      --top 20
+      --download-top 5
+      --download-bytes 50000000
+      --download-timeout 45s
+      --out-file /app/output/ipv4-download-results.txt
+    volumes:
+      - ./output:/app/output
+      - ./ipv4cidr.txt:/app/ipv4cidr.txt:ro
+    restart: "no"
+    network_mode: host
+    profiles:
+      - download
+
+  # 带 DNS 上传的服务（Cloudflare）
+  mcis-dns-cloudflare:
+    build: .
+    container_name: mcis-dns-cloudflare
+    command: >
+      -v
+      --out text
+      --cidr-file /app/ipv4cidr.txt
+      --budget 2000
+      --top 20
+      --download-top 5
+      --dns-provider cloudflare
+      --dns-subdomain cf
+      --out-file /app/output/ipv4-cf-results.txt
+    environment:
+      - CF_API_TOKEN=${CF_API_TOKEN}
+      - CF_ZONE_ID=${CF_ZONE_ID}
+    volumes:
+      - ./output:/app/output
+      - ./ipv4cidr.txt:/app/ipv4cidr.txt:ro
+    restart: "no"
+    network_mode: host
+    profiles:
+      - dns
+
+  # 带 DNS 上传的服务（Vercel）
+  mcis-dns-vercel:
+    build: .
+    container_name: mcis-dns-vercel
+    command: >
+      -v
+      --out text
+      --cidr-file /app/ipv4cidr.txt
+      --budget 2000
+      --top 20
+      --download-top 5
+      --dns-provider vercel
+      --dns-zone example.com
+      --dns-subdomain cf
+      --out-file /app/output/ipv4-vercel-results.txt
+    environment:
+      - VERCEL_TOKEN=${VERCEL_TOKEN}
+      - VERCEL_TEAM_ID=${VERCEL_TEAM_ID}
+    volumes:
+      - ./output:/app/output
+      - ./ipv4cidr.txt:/app/ipv4cidr.txt:ro
+    restart: "no"
+    network_mode: host
+    profiles:
+      - dns
+
+  # 定时任务服务（使用 cron）
+  mcis-cron:
+    build: .
+    container_name: mcis-cron
+    entrypoint: /bin/sh
+    command: >
+      -c "
+      echo '0 2 * * * /app/mcis -v --out text --cidr-file /app/ipv4cidr.txt --out-file /app/output/ipv4-cron-results.txt' > /etc/crontabs/mcis &&
+      crond -f -l 2
+      "
+    volumes:
+      - ./output:/app/output
+      - ./ipv4cidr.txt:/app/ipv4cidr.txt:ro
+    restart: unless-stopped
+    network_mode: host
+    profiles:
+      - cron
+    user: root

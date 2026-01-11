@@ -1,0 +1,22 @@
+# 简化版 Docker Compose 配置
+# 适合快速开始使用
+
+version: '3.8'
+
+services:
+  # 基础 IPv4 优选
+  mcis:
+    build: .
+    container_name: mcis
+    command: >
+      -v
+      --out text
+      --cidr-file /app/ipv4cidr.txt
+      --budget 2000
+      --top 20
+      --out-file /app/output/results.txt
+    volumes:
+      - ./output:/app/output
+      - ./ipv4cidr.txt:/app/ipv4cidr.txt:ro
+    restart: "no"
+    network_mode: host

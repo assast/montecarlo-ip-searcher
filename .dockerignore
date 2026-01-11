@@ -1,0 +1,24 @@
+# Git 相关
+.git
+.github
+.gitignore
+
+# 输出文件
+output/
+*.txt
+!ipv4cidr.txt
+!ipv6cidr.txt
+
+# Docker 相关
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# 文档
+*.md
+!readme.md
+
+# 其他
+.env
+.env.*
+LICENSE

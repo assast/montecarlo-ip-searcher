@@ -1,0 +1,98 @@
+# 自定义配置示例
+# 使用方法: docker-compose -f examples/custom-config.yml up
+
+version: '3.8'
+
+services:
+  # 高预算、高并发配置（适合服务器环境）
+  mcis-high-performance:
+    build: ..
+    container_name: mcis-high-performance
+    command: >
+      -v
+      --out jsonl
+      --cidr-file /app/ipv4cidr.txt
+      --budget 10000
+      --top 50
+      --concurrency 500
+      --timeout 5s
+      --download-top 10
+      --out-file /app/output/high-performance-results.jsonl
+    volumes:
+      - ../output:/app/output
+      - ../ipv4cidr.txt:/app/ipv4cidr.txt:ro
+    restart: "no"
+    network_mode: host
+
+  # 低预算、快速测试配置（适合快速验证）
+  mcis-quick-test:
+    build: ..
+    container_name: mcis-quick-test
+    command: >
+      -v
+      --out text
+      --cidr-file /app/ipv4cidr.txt
+      --budget 500
+      --top 5
+      --concurrency 100
+      --timeout 2s
+      --out-file /app/output/quick-test-results.txt
+    volumes:
+      - ../output:/app/output
+      - ../ipv4cidr.txt:/app/ipv4cidr.txt:ro
+    restart: "no"
+    network_mode: host
+
+  # 特定 CIDR 测试
+  mcis-specific-cidr:
+    build: ..
+    container_name: mcis-specific-cidr
+    command: >
+      -v
+      --cidr 1.1.1.0/24
+      --cidr 8.8.8.0/24
+      --budget 1000
+      --top 10
+      --out text
+      --out-file /app/output/specific-cidr-results.txt
+    volumes:
+      - ../output:/app/output
+    restart: "no"
+    network_mode: host
+
+  # 自定义域名测试
+  mcis-custom-domain:
+    build: ..
+    container_name: mcis-custom-domain
+    command: >
+      -v
+      --cidr-file /app/ipv4cidr.txt
+      --host your-domain.com
+      --path /custom-path
+      --budget 2000
+      --top 20
+      --out text
+      --out-file /app/output/custom-domain-results.txt
+    volumes:
+      - ../output:/app/output
+      - ../ipv4cidr.txt:/app/ipv4cidr.txt:ro
+    restart: "no"
+    network_mode: host
+
+  # CSV 输出格式（便于数据分析）
+  mcis-csv-output:
+    build: ..
+    container_name: mcis-csv-output
+    command: >
+      -v
+      --out csv
+      --cidr-file /app/ipv4cidr.txt
+      --budget 2000
+      --top 50
+      --download-top 10
+      --out-file /app/output/results.csv
+    volumes:
+      - ../output:/app/output
+      - ../ipv4cidr.txt:/app/ipv4cidr.txt:ro
+    restart: "no"
+    network_mode: host
